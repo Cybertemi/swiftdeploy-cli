@@ -1,0 +1,26 @@
+# ─────────────────────────────────────────────────────────
+# SwiftDeploy Manifest
+# This is the ONLY file you edit.
+# Everything else is generated from this file.
+# ─────────────────────────────────────────────────────────
+
+# ── Service configuration ─────────────────────────────────
+services:
+  image: swift-deploy-1-node:latest
+  port: 3000
+  version: "1.0.0"
+  mode: canary              # stable or canary
+
+# ── Nginx configuration ───────────────────────────────────
+nginx:
+  image: nginx:latest
+  port: 8080
+  proxy_timeout: 30
+
+# ── Network configuration ─────────────────────────────────
+network:
+  name: swiftdeploy-net
+  driver_type: bridge
+
+# ── Contact info (used in nginx error responses) ──────────
+contact: "ops@swiftdeploy.io"
