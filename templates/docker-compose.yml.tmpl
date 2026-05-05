@@ -16,20 +16,15 @@ services:
       APP_PORT: "{{SERVICE_PORT}}"
     volumes:
       - app-logs:/var/log/app
-    # Health check on /healthz
     healthcheck:
       test: ["CMD", "wget", "-qO-",
              "http://localhost:{{SERVICE_PORT}}/healthz"]
       interval: 10s
       timeout: 5s
       retries: 6
-      start_period: 5s
-    # Security — non-root, dropped capabilities
-    user: "1000:1000"
+      start_period: 15s
     cap_drop:
       - ALL
-    # Never expose service port directly
-    # All traffic routes through Nginx
     expose:
       - "{{SERVICE_PORT}}"
 
@@ -49,10 +44,35 @@ services:
       api:
         condition: service_healthy
 
+  # ── OPA Policy Agent ─────────────────────────────────────
+  # Reachable by swiftdeploy CLI on internal network only
+  # NOT exposed through Nginx — no public access
+  opa:
+    image: openpolicyagent/opa:latest-rootless
+    container_name: swiftdeploy-opa
+    restart: unless-stopped
+    networks:
+      - {{NETWORK_NAME}}
+      - opa-internal
+    volumes:
+      - ./policies:/policies:ro
+    command:
+      - "run"
+      - "--server"
+      - "--addr=0.0.0.0:8181"
+      - "--log-level=error"
+      - "/policies"
+    expose:
+      - "8181"
+
 networks:
   {{NETWORK_NAME}}:
     name: {{NETWORK_NAME}}
     driver: {{NETWORK_DRIVER}}
+  # OPA internal network — isolated from public Nginx ingress
+  opa-internal:
+    name: opa-internal
+    driver: bridge
 
 volumes:
   app-logs:
