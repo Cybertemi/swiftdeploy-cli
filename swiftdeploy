@@ -632,22 +632,27 @@ def cmd_status():
 
                 # Check infrastructure policy
                 stats = get_host_stats()
-                infra_ok, infra_reasons, _ = query_opa(
+                infra_ok, infra_reasons, infra_err = query_opa(
                     "infrastructure", stats)
-                status_icon = (f"{GREEN}PASS{RESET}"
-                               if infra_ok
-                               else f"{RED}FAIL{RESET}")
-                print(f"  infrastructure: [{status_icon}]")
-                if not infra_ok:
-                    for r in infra_reasons:
-                        print(f"    {RED}✗{RESET} {r}")
+                if infra_err:
+                    print(f"  infrastructure: [{YELLOW}UNKNOWN{RESET}]")
+                    print(f"    {YELLOW}!{RESET} {infra_err}")
+                else:
+                    status_icon = (f"{GREEN}PASS{RESET}"
+                                  if infra_ok
+                                  else f"{RED}FAIL{RESET}")
+                    print(f"  infrastructure: [{status_icon}]")
+                    if not infra_ok:
+                        for r in infra_reasons:
+                            print(f"    {RED}✗{RESET} {r}")
+                
 
                 # Check canary policy
                 promote_input = {
                     "error_rate": error_rate,
                     "p99_latency_ms": p99_ms
                 }
-                canary_ok, canary_reasons, _ = query_opa(
+                canary_ok, canary_reasons, canary_err = query_opa(
                     "canary", promote_input)
                 status_icon = (f"{GREEN}PASS{RESET}"
                                if canary_ok
