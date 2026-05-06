@@ -84,7 +84,7 @@ def query_opa(package, input_data):
 
         result_data = result.get("result", {})
         allowed = result_data.get("allow", False)
-        reasons = list(result_data.get("reasons", []))
+        reasons = list(result_data.get("deny_reasons", []))
         return allowed, reasons, None
 
     except urllib.error.URLError as e:

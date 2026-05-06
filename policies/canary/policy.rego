@@ -1,25 +1,9 @@
 package canary
 
-# ── Decision: allow or deny promotion to canary ───────────
-# Input: {error_rate: float, p99_latency_ms: float}
-# Data:  data.limits (from data.json)
+import future.keywords.if
 
-default allow = false
+default allow := false
 
-allow {
-    error_rate_ok
-    latency_ok
-}
-
-error_rate_ok {
-    input.error_rate <= data.limits.max_error_rate
-}
-
-latency_ok {
-    input.p99_latency_ms <= data.limits.max_p99_latency_ms
-}
-
-# ── Reasons: explain WHY it was denied ────────────────────
 reasons[msg] {
     input.error_rate > data.limits.max_error_rate
     msg := sprintf(
@@ -31,7 +15,11 @@ reasons[msg] {
 reasons[msg] {
     input.p99_latency_ms > data.limits.max_p99_latency_ms
     msg := sprintf(
-        "P99 latency %.0fms exceeds maximum %.0fms",
+        "P99 latency %.1fms exceeds maximum %.1fms",
         [input.p99_latency_ms, data.limits.max_p99_latency_ms]
     )
+}
+
+allow {
+    count(reasons) == 0
 }

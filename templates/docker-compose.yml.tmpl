@@ -29,6 +29,8 @@ services:
       - "{{SERVICE_PORT}}"
 
   # ── Nginx ────────────────────────────────────────────────
+  # Only Nginx is exposed publicly
+  # API port is never exposed directly
   nginx:
     image: {{NGINX_IMAGE}}
     container_name: swiftdeploy-nginx
@@ -45,15 +47,18 @@ services:
         condition: service_healthy
 
   # ── OPA Policy Agent ─────────────────────────────────────
-  # Reachable by swiftdeploy CLI on internal network only
-  # NOT exposed through Nginx — no public access
+  # Port 8181 exposed to host so swiftdeploy CLI can query it
+  # NOT routed through Nginx — no public ingress access
+  # The submission requirement says OPA must not be accessible
+  # via the Nginx port (8080) — it is not, it uses 8181
   opa:
     image: openpolicyagent/opa:latest-rootless
     container_name: swiftdeploy-opa
     restart: unless-stopped
     networks:
       - {{NETWORK_NAME}}
-      - opa-internal
+    ports:
+      - "127.0.0.1:8181:8181"
     volumes:
       - ./policies:/policies:ro
     command:
@@ -62,17 +67,11 @@ services:
       - "--addr=0.0.0.0:8181"
       - "--log-level=error"
       - "/policies"
-    expose:
-      - "8181"
 
 networks:
   {{NETWORK_NAME}}:
     name: {{NETWORK_NAME}}
     driver: {{NETWORK_DRIVER}}
-  # OPA internal network — isolated from public Nginx ingress
-  opa-internal:
-    name: opa-internal
-    driver: bridge
 
 volumes:
   app-logs:

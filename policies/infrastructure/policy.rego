@@ -1,23 +1,26 @@
 package infrastructure
 
-default allow = false
+import future.keywords.if
 
-#  Allow when everything is OK
+default allow := false
+
+# collect violations
+violations[v] {
+    input.disk_free_gb < data.limits.min_disk_free_gb
+    v := sprintf("Disk free %.2fGB is below required minimum %.2fGB",
+        [input.disk_free_gb, data.limits.min_disk_free_gb])
+}
+
+violations[v] {
+    input.cpu_load > data.limits.max_cpu_load
+    v := sprintf("CPU load %.2f exceeds maximum %.2f",
+        [input.cpu_load, data.limits.max_cpu_load])
+}
+
+# FINAL DECISION
 allow {
-  input.disk_free_gb >= 10
-  input.cpu_load <= 2.0
+    count(violations) == 0
 }
 
-#  Violations
-violations[msg] {
-  input.disk_free_gb < 10
-  msg := "Disk free < 10GB"
-}
-
-violations[msg] {
-  input.cpu_load > 2.0
-  msg := "CPU load > 2.0"
-}
-
-# Expose reasons
+# expose reasons
 reasons := violations
